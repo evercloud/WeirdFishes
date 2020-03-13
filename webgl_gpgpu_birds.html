@@ -288,10 +288,9 @@
 
 			import * as THREE from '../build/three.module.js';
 
-			import Stats from './jsm/libs/stats.module.js';
-			import { GUI } from './jsm/libs/dat.gui.module.js';
+			// import { GUI } from './jsm/libs/dat.gui.module.js';
 
-			import { GPUComputationRenderer } from './jsm/misc/GPUComputationRenderer.js';
+			import { GPUComputationRenderer } from './examples/jsm/misc/GPUComputationRenderer.js';
 
 			/* TEXTURE WIDTH FOR SIMULATION */
 			var WIDTH = 32;
@@ -387,7 +386,7 @@
 			BirdGeometry.prototype = Object.create( THREE.BufferGeometry.prototype );
 
 
-			var container, stats;
+			var container;
 			var camera, scene, renderer;
 			var mouseX = 0, mouseY = 0;
 
@@ -427,9 +426,6 @@
 
 				initComputeRenderer();
 
-				stats = new Stats();
-				container.appendChild( stats.dom );
-
 				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
 				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
 				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
@@ -438,7 +434,7 @@
 
 				window.addEventListener( 'resize', onWindowResize, false );
 
-				var gui = new GUI();
+				// var gui = new GUI();
 
 
 				var effectController = {
@@ -448,21 +444,21 @@
 					freedom: 0.75
 				};
 
-				var valuesChanger = function () {
+				// var valuesChanger = function () {
 
-					velocityUniforms[ "separationDistance" ].value = effectController.separation;
-					velocityUniforms[ "alignmentDistance" ].value = effectController.alignment;
-					velocityUniforms[ "cohesionDistance" ].value = effectController.cohesion;
-					velocityUniforms[ "freedomFactor" ].value = effectController.freedom;
+				// 	velocityUniforms[ "separationDistance" ].value = effectController.separation;
+				// 	velocityUniforms[ "alignmentDistance" ].value = effectController.alignment;
+				// 	velocityUniforms[ "cohesionDistance" ].value = effectController.cohesion;
+				// 	velocityUniforms[ "freedomFactor" ].value = effectController.freedom;
 
-				};
+				// };
 
-				valuesChanger();
+				// valuesChanger();
 
-				gui.add( effectController, "separation", 0.0, 100.0, 1.0 ).onChange( valuesChanger );
-				gui.add( effectController, "alignment", 0.0, 100, 0.001 ).onChange( valuesChanger );
-				gui.add( effectController, "cohesion", 0.0, 100, 0.025 ).onChange( valuesChanger );
-				gui.close();
+				// gui.add( effectController, "separation", 0.0, 100.0, 1.0 ).onChange( valuesChanger );
+				// gui.add( effectController, "alignment", 0.0, 100, 0.001 ).onChange( valuesChanger );
+				// gui.add( effectController, "cohesion", 0.0, 100, 0.025 ).onChange( valuesChanger );
+				// gui.close();
 
 				initBirds();
 
@@ -634,7 +630,6 @@
 				requestAnimationFrame( animate );
 
 				render();
-				stats.update();
 
 			}
 
