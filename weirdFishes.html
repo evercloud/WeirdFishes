@@ -48,13 +48,12 @@
 	<script id="fragmentShaderVelocity" type="x-shader/x-fragment">
 
 			uniform float time;
-			uniform float testing;
 			uniform float delta; // about 0.016
 			uniform float separationDistance; // 20
 			uniform float alignmentDistance; // 40
 			uniform float cohesionDistance; //
-			uniform float freedomFactor;
 			uniform vec3 predator;
+			uniform float predatorCoeff;
 
 			const float width = resolution.x;
 			const float height = resolution.y;
@@ -119,14 +118,10 @@
 				// move birds away from predator
 				if ( dist < preyRadius ) {
 
-					f = ( distSquared / preyRadiusSq - 1.0 ) * delta * 100.;
+					f = ( distSquared / preyRadiusSq - 1.0 ) * delta * 100. * predatorCoeff;
 					velocity += normalize( dir ) * f;
 					limit += 5.0;
 				}
-
-
-				// if (testing == 0.0) {}
-				// if ( rand( uv + time ) < freedomFactor ) {}
 
 
 				// Attract flocks to the center
@@ -303,7 +298,7 @@
 		import { GPUComputationRenderer } from './examples/jsm/misc/GPUComputationRenderer.js';
 
 		/* TEXTURE WIDTH FOR SIMULATION */
-		var WIDTH = 16;// 32;
+		var WIDTH = 64;// 32;
 
 		var BIRDS = WIDTH * WIDTH;
 
@@ -345,25 +340,14 @@
 			for (var f = 0; f < BIRDS; f++) {
 
 				// // Body
-				// verts_push(
-				// 	0, - 0, - 20,
-				// 	0, 4, - 20,
-				// 	0, 0, 30
-				// );
+				// verts_push(0, - 0, - 20, 0, 4, - 20, 0, 0, 30);
 
 				// // Left Wing
-				// verts_push(
-				// 	0, 0, - 15,
-				// 	- wingsSpan, 0, 0,
-				// 	0, 0, 15
-				// );
+				// verts_push(0, 0, - 15, - wingsSpan, 0, 0, 0, 0, 15);
+
 
 				// // Right Wing
-				// verts_push(
-				// 	0, 0, 15,
-				// 	wingsSpan, 0, 0,
-				// 	0, 0, - 15
-				// );
+				// verts_push(0, 0, 15, wingsSpan, 0, 0, 0, 0, - 15);
 
 
 				//Head
@@ -425,7 +409,7 @@
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
 
-		var BOUNDS = 800, BOUNDS_HALF = BOUNDS / 2; //800
+		var BOUNDS = 1200, BOUNDS_HALF = BOUNDS / 2; //800
 
 		var last = performance.now();
 
@@ -458,9 +442,7 @@
 
 			initComputeRenderer();
 
-			document.addEventListener('mousemove', onDocumentMouseMove, false);
-			document.addEventListener('touchstart', onDocumentTouchStart, false);
-			document.addEventListener('touchmove', onDocumentTouchMove, false);
+			initControls();
 
 			window.addEventListener('resize', onWindowResize, false);
 
@@ -469,7 +451,6 @@
 				separation: 10.0, //20.0
 				alignment: 80.0, //20.0
 				cohesion: 10.0, //20.0
-				freedom: 0.75 //0.75
 			};
 
 			initBirds();
@@ -498,12 +479,11 @@
 			positionUniforms["delta"] = { value: 0.0 };
 			velocityUniforms["time"] = { value: 1.0 };
 			velocityUniforms["delta"] = { value: 0.0 };
-			velocityUniforms["testing"] = { value: 1.0 };
-			velocityUniforms["separationDistance"] = { value: 1.0 };
-			velocityUniforms["alignmentDistance"] = { value: 1.0 };
-			velocityUniforms["cohesionDistance"] = { value: 1.0 };
-			velocityUniforms["freedomFactor"] = { value: 1.0 };
+			velocityUniforms["separationDistance"] = { value: 2.0 }; //{ value: 1.0 };
+			velocityUniforms["alignmentDistance"] = { value: 2.0 }; //{ value: 1.0 };
+			velocityUniforms["cohesionDistance"] = { value: 2.0 }; //{ value: 1.0 };
 			velocityUniforms["predator"] = { value: new THREE.Vector3() };
+			velocityUniforms["predatorCoeff"] = { value: 0.0 };
 			velocityVariable.material.defines.BOUNDS = BOUNDS.toFixed(2);
 
 			velocityVariable.wrapS = THREE.RepeatWrapping;
@@ -517,6 +497,94 @@
 				console.error(error);
 
 			}
+
+		}
+
+		function initControls() {
+			document.addEventListener('mousemove', onDocumentMouseMove, false);
+			// document.addEventListener('touchstart', onDocumentTouchStart, false);
+			// document.addEventListener('touchmove', onDocumentTouchMove, false);
+
+			document.addEventListener("contextmenu", function (e) {
+				e.preventDefault();
+			}, false);
+
+			// Listen for mouseup
+			document.addEventListener("mousedown", function (e) {
+				switch (e.button) {
+					case 0: // Primary button ("left")
+						onDocumentMouseLeftClick();
+						break;
+					case 2: // Secondary button ("right")
+						onDocumentMouseRightClick();
+						break;
+				}
+			}, false);
+
+			document.addEventListener("mouseup", function (e) {
+
+				velocityUniforms["predatorCoeff"] = { value: 0.0 };
+
+			}, false);
+		}
+
+
+
+		function onDocumentMouseMove(event) {
+
+			mouseX = event.clientX - windowHalfX;
+			mouseY = event.clientY - windowHalfY;
+
+		}
+
+
+		function onDocumentMouseLeftClick(event) {
+
+			velocityUniforms["predatorCoeff"] = { value: -1.0 };
+
+		}
+
+		function onDocumentMouseRightClick(event) {
+
+			velocityUniforms["predatorCoeff"] = { value: 1.0 };
+
+		}
+
+		// function onDocumentTouchStart(event) {
+
+		// 	if (event.touches.length === 1) {
+
+		// 		event.preventDefault();
+
+		// 		mouseX = event.touches[0].pageX - windowHalfX;
+		// 		mouseY = event.touches[0].pageY - windowHalfY;
+
+		// 	}
+
+		// }
+
+		// function onDocumentTouchMove(event) {
+
+		// 	if (event.touches.length === 1) {
+
+		// 		event.preventDefault();
+
+		// 		mouseX = event.touches[0].pageX - windowHalfX;
+		// 		mouseY = event.touches[0].pageY - windowHalfY;
+
+		// 	}
+
+		// }
+
+		function onWindowResize() {
+
+			windowHalfX = window.innerWidth / 2;
+			windowHalfY = window.innerHeight / 2;
+
+			camera.aspect = window.innerWidth / window.innerHeight;
+			camera.updateProjectionMatrix();
+
+			renderer.setSize(window.innerWidth, window.innerHeight);
 
 		}
 
@@ -590,59 +658,12 @@
 		}
 
 
-		function onWindowResize() {
-
-			windowHalfX = window.innerWidth / 2;
-			windowHalfY = window.innerHeight / 2;
-
-			camera.aspect = window.innerWidth / window.innerHeight;
-			camera.updateProjectionMatrix();
-
-			renderer.setSize(window.innerWidth, window.innerHeight);
-
-		}
-
-		function onDocumentMouseMove(event) {
-
-			mouseX = event.clientX - windowHalfX;
-			mouseY = event.clientY - windowHalfY;
-
-		}
-
-		function onDocumentTouchStart(event) {
-
-			if (event.touches.length === 1) {
-
-				event.preventDefault();
-
-				mouseX = event.touches[0].pageX - windowHalfX;
-				mouseY = event.touches[0].pageY - windowHalfY;
-
-			}
-
-		}
-
-		function onDocumentTouchMove(event) {
-
-			if (event.touches.length === 1) {
-
-				event.preventDefault();
-
-				mouseX = event.touches[0].pageX - windowHalfX;
-				mouseY = event.touches[0].pageY - windowHalfY;
-
-			}
-
-		}
-
-		//
 
 		function animate() {
 
 			requestAnimationFrame(animate);
 
 			render();
-
 		}
 
 		function render() {
@@ -673,6 +694,12 @@
 			renderer.render(scene, camera);
 
 		}
+
+		updateFishes(deltaTime)
+		{
+
+		}
+
 
 	</script>
 </body>
