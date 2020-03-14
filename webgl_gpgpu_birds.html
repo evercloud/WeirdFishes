@@ -37,8 +37,8 @@
 
 				phase = mod( ( phase + delta + length( velocity.xz ) * delta * 3. + max( velocity.y, 0.0 ) * delta * 6. ), 62.83 );
 
-				//gl_FragColor = vec4( position + velocity * delta * 15. , phase );
-				gl_FragColor = vec4(position + velocity * delta * 15. , 1 );
+				gl_FragColor = vec4( position + velocity * delta * 15. , phase );
+				//gl_FragColor = vec4(position + velocity * delta * 15. , 1 );
 				//gl_FragColor = tmpPos;
 			}
 
@@ -226,10 +226,16 @@
 
 				vec3 newPosition = position;
 
-				if ( birdVertex == 4.0 || birdVertex == 7.0 ) {
-					// flap wings
-					newPosition.y = sin( tmpPos.w ) * 5.;
+				//if ( birdVertex == 4.0 || birdVertex == 7.0 ) {
+				if ( birdVertex == 3.0 || birdVertex == 8.0) {
+						// flap wings
+					newPosition.x = sin( tmpPos.w ) * 1.5;
 				}
+				else if ( birdVertex == 6.0 || birdVertex == 7.0) {
+					// flap wings
+				newPosition.x = sin( tmpPos.w ) * 4.;
+				}
+				
 
 				newPosition = mat3( modelMatrix ) * newPosition;
 
@@ -282,7 +288,10 @@
 				//float z2 = 0.2 + ( 1000. - z ) / 1000. * vColor.x;
 				//gl_FragColor = vec4( z2, z2, z2, 1. );
 
-				gl_FragColor = vec4(color.x, color.y,color.z, 1);
+				//my working solution
+				//gl_FragColor = vec4(color.x, color.y,color.z, 1);
+				//CRAZY RANDOM COLORS alternative
+				gl_FragColor = vec4(vColor.x, color.y, color.z, 1);
 			}
 
 		</script>
@@ -301,7 +310,7 @@
 		// Custom Geometry - using 3 triangles each. No UVs, no normals currently.
 		var BirdGeometry = function () {
 
-			var triangles = BIRDS * 3;//3;
+			var triangles = BIRDS * 3;
 			var points = triangles * 3;
 
 			THREE.BufferGeometry.call(this);
@@ -356,25 +365,26 @@
 				// 	0, 0, - 15
 				// );
 
-				// Body
+
+				//Head
 				verts_push(
-					0, - 30, 0,
-					0, 30, 0,
+					0, - 35, 0,
+					0, 35, 0,
 					0, 0, 30
 				);
 
-				// Left Wing
+				//Body
 				verts_push(
-					0, 0, -30,
-					0, 30, 0,
-					0, -30, 0
+					0, 0, -60,
+					0, 35, 0,
+					0, -35, 0
 				);
 
-				// Right Wing
+				//Tail
 				verts_push(
-					0, - 20, -60,
-					0, 20, -60,
-					0, 0, -30
+					0, - 25, -80,
+					0, 25, -80,
+					0, 0, -40
 				);
 
 			}
@@ -415,7 +425,7 @@
 		var windowHalfX = window.innerWidth / 2;
 		var windowHalfY = window.innerHeight / 2;
 
-		var BOUNDS = 200, BOUNDS_HALF = BOUNDS / 2; //800
+		var BOUNDS = 800, BOUNDS_HALF = BOUNDS / 2; //800
 
 		var last = performance.now();
 
@@ -435,10 +445,10 @@
 			document.body.appendChild(container);
 
 			camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
-			camera.position.z = 150;//350;
+			camera.position.z = 350;//350;
 
 			scene = new THREE.Scene();
-			scene.background = new THREE.Color(0xffffff);
+			scene.background = new THREE.Color(0x006994);//(0x45b1ff);
 			scene.fog = new THREE.Fog(0xffffff, 100, 1000);
 
 			renderer = new THREE.WebGLRenderer();
@@ -516,7 +526,7 @@
 
 			// For Vertex and Fragment
 			birdUniforms = {
-				"color": { value: new THREE.Color(0x45b1ff) }, //{ value: new THREE.Color(Math.random() * 0xffffff) }
+				"color": { value: new THREE.Color(0xffffff) }, //{ value: new THREE.Color(Math.random() * 0xffffff) }
 				"texturePosition": { value: null },
 				"textureVelocity": { value: null },
 				"time": { value: 1.0 },
