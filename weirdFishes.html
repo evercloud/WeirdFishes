@@ -20,7 +20,7 @@
 
 <body>
 
-	<!-- shader for bird's position -->
+	<!-- shader for fish's position -->
 	<script id="fragmentShaderPosition" type="x-shader/x-fragment">
 
 			uniform float time;
@@ -39,12 +39,12 @@
 
 				gl_FragColor = vec4( position + velocity * delta * 15. , phase );
 				//gl_FragColor = vec4(position + velocity * delta * 15. , 1 );
-				//gl_FragColor = tmpPos;
+				//gl_FragColor = tmpPos;//lock fishes
 			}
 
 		</script>
 
-	<!-- shader for bird's velocity -->
+	<!-- shader for fish's velocity -->
 	<script id="fragmentShaderVelocity" type="x-shader/x-fragment">
 
 			uniform float time;
@@ -86,7 +86,7 @@
 
 
 				vec2 uv = gl_FragCoord.xy / resolution.xy;
-				vec3 birdPosition, birdVelocity;
+				vec3 fishPosition, fishVelocity;
 
 				vec3 selfPosition = texture2D( texturePosition, uv ).xyz;
 				vec3 selfVelocity = texture2D( textureVelocity, uv ).xyz;
@@ -115,7 +115,7 @@
 				float preyRadiusSq = preyRadius * preyRadius;
 
 
-				// move birds away from predator
+				// move fishes away from predator
 				if ( dist < preyRadius ) {
 
 					f = ( distSquared / preyRadiusSq - 1.0 ) * delta * 100. * predatorCoeff;
@@ -136,9 +136,9 @@
 					for ( float x = 0.0; x < width; x++ ) {
 
 						vec2 ref = vec2( x + 0.5, y + 0.5 ) / resolution.xy;
-						birdPosition = texture2D( texturePosition, ref ).xyz;
+						fishPosition = texture2D( texturePosition, ref ).xyz;
 
-						dir = birdPosition - selfPosition;
+						dir = fishPosition - selfPosition;
 						dist = length( dir );
 
 						if ( dist < 0.0001 ) continue;
@@ -161,10 +161,10 @@
 							float threshDelta = alignmentThresh - separationThresh;
 							float adjustedPercent = ( percent - separationThresh ) / threshDelta;
 
-							birdVelocity = texture2D( textureVelocity, ref ).xyz;
+							fishVelocity = texture2D( textureVelocity, ref ).xyz;
 
 							f = ( 0.5 - cos( adjustedPercent * PI_2 ) * 0.5 + 0.5 ) * delta;
-							velocity += normalize( birdVelocity ) * f;
+							velocity += normalize( fishVelocity ) * f;
 
 						} else {
 
@@ -198,12 +198,12 @@
 
 		</script>
 
-	<script type="x-shader/x-vertex" id="birdVS">
+	<script type="x-shader/x-vertex" id="fishVS">
 
 			attribute vec2 reference;
-			attribute float birdVertex;
+			attribute float fishVertex;
 
-			attribute vec3 birdColor;
+			attribute vec3 fishColor;
 
 			uniform sampler2D texturePosition;
 			uniform sampler2D textureVelocity;
@@ -221,12 +221,12 @@
 
 				vec3 newPosition = position;
 
-				//if ( birdVertex == 4.0 || birdVertex == 7.0 ) {
-				if ( birdVertex == 3.0 || birdVertex == 8.0) {
+				//if ( fishVertex == 4.0 || fishVertex == 7.0 ) {
+				if ( fishVertex == 3.0 || fishVertex == 8.0) {
 						// flap wings
 					newPosition.x = sin( tmpPos.w ) * 1.5;
 				}
-				else if ( birdVertex == 6.0 || birdVertex == 7.0) {
+				else if ( fishVertex == 6.0 || fishVertex == 7.0) {
 					// flap wings
 				newPosition.x = sin( tmpPos.w ) * 4.;
 				}
@@ -264,14 +264,14 @@
 
 				z = newPosition.z;
 
-				vColor = vec4( birdColor, 1.0 );
+				vColor = vec4( fishColor, 1.0 );
 				gl_Position = projectionMatrix *  viewMatrix  * vec4( newPosition, 1.0 );
 			}
 
 		</script>
 
-	<!-- bird geometry shader -->
-	<script type="x-shader/x-fragment" id="birdFS">
+	<!-- fish geometry shader -->
+	<script type="x-shader/x-fragment" id="fishFS">
 
 			varying vec4 vColor;
 			varying float z;
@@ -297,28 +297,42 @@
 
 		import { GPUComputationRenderer } from './examples/jsm/misc/GPUComputationRenderer.js';
 
-		/* TEXTURE WIDTH FOR SIMULATION */
-		var WIDTH = 64;// 32;
+		///////// GODRAYS VARIABLES /////////////////
+		import { GodRaysFakeSunShader, GodRaysDepthMaskShader, GodRaysCombineShader, GodRaysGenerateShader } from './examples/jsm/shaders/GodRaysShader.js';
+		var postprocessing = { enabled: true };
+		var sunPosition = new THREE.Vector3(0, 1000, - 1000);
+		// Use a smaller size for some of the god-ray render targets for better performance.
+		var godrayRenderTargetResolutionMultiplier = 1.0 / 12.0;
+		var orbitRadius = 200;
+		var bgColor = 0xffcc00// 0x000511;
+		var sunColor = 0xff0000;// 0xffee00;
+		var screenSpacePosition = new THREE.Vector3();
+		var materialDepth = new THREE.MeshDepthMaterial();
+		//////////////////////////
 
-		var BIRDS = WIDTH * WIDTH;
+
+		/* TEXTURE WIDTH FOR SIMULATION */
+		var WIDTH = 32;// 32;
+
+		var FISHES = WIDTH * WIDTH;
 
 		// Custom Geometry - using 3 triangles each. No UVs, no normals currently.
-		var BirdGeometry = function () {
+		var FishGeometry = function () {
 
-			var triangles = BIRDS * 3;
+			var triangles = FISHES * 3;
 			var points = triangles * 3;
 
 			THREE.BufferGeometry.call(this);
 
 			var vertices = new THREE.BufferAttribute(new Float32Array(points * 3), 3);
-			var birdColors = new THREE.BufferAttribute(new Float32Array(points * 3), 3);
+			var fishColors = new THREE.BufferAttribute(new Float32Array(points * 3), 3);
 			var references = new THREE.BufferAttribute(new Float32Array(points * 2), 2);
-			var birdVertex = new THREE.BufferAttribute(new Float32Array(points), 1);
+			var fishVertex = new THREE.BufferAttribute(new Float32Array(points), 1);
 
 			this.setAttribute('position', vertices);
-			this.setAttribute('birdColor', birdColors);
+			this.setAttribute('fishColor', fishColors);
 			this.setAttribute('reference', references);
-			this.setAttribute('birdVertex', birdVertex);
+			this.setAttribute('fishVertex', fishVertex);
 
 			// this.setAttribute( 'normal', new Float32Array( points * 3 ), 3 );
 
@@ -335,20 +349,8 @@
 
 			}
 
-			var wingsSpan = 20;
 
-			for (var f = 0; f < BIRDS; f++) {
-
-				// // Body
-				// verts_push(0, - 0, - 20, 0, 4, - 20, 0, 0, 30);
-
-				// // Left Wing
-				// verts_push(0, 0, - 15, - wingsSpan, 0, 0, 0, 0, 15);
-
-
-				// // Right Wing
-				// verts_push(0, 0, 15, wingsSpan, 0, 0, 0, 0, - 15);
-
+			for (var f = 0; f < FISHES; f++) {
 
 				//Head
 				verts_push(
@@ -370,7 +372,6 @@
 					0, 25, -80,
 					0, 0, -40
 				);
-
 			}
 
 			for (var v = 0; v < triangles * 3; v++) {
@@ -381,17 +382,17 @@
 
 				var c = new THREE.Color(
 					0x444444 +
-					~ ~(v / 9) / BIRDS * 0x666666
+					~ ~(v / 9) / FISHES * 0x666666
 				);
 
-				birdColors.array[v * 3 + 0] = c.r;
-				birdColors.array[v * 3 + 1] = c.g;
-				birdColors.array[v * 3 + 2] = c.b;
+				fishColors.array[v * 3 + 0] = c.r;
+				fishColors.array[v * 3 + 1] = c.g;
+				fishColors.array[v * 3 + 2] = c.b;
 
 				references.array[v * 2] = x;
 				references.array[v * 2 + 1] = y;
 
-				birdVertex.array[v] = v % 9;
+				fishVertex.array[v] = v % 9;
 
 			}
 
@@ -399,7 +400,7 @@
 
 		};
 
-		BirdGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
+		FishGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
 
 
 		var container;
@@ -418,7 +419,7 @@
 		var positionVariable;
 		var positionUniforms;
 		var velocityUniforms;
-		var birdUniforms;
+		var fishUniforms;
 
 		init();
 		animate();
@@ -432,8 +433,8 @@
 			camera.position.z = 350;//350;
 
 			scene = new THREE.Scene();
-			scene.background = new THREE.Color(0x006994);//(0x45b1ff);
-			scene.fog = new THREE.Fog(0xffffff, 100, 1000);
+			scene.background = new THREE.Color(0x006994);;//GOOD: (0x006994);
+			// scene.fog = new THREE.Fog(0xffffff, 100, 1000);
 
 			renderer = new THREE.WebGLRenderer();
 			renderer.setPixelRatio(window.devicePixelRatio);
@@ -453,9 +454,237 @@
 				cohesion: 10.0, //20.0
 			};
 
-			initBirds();
+			initFishes();
+
+			initPostprocessing(window.innerWidth, window.innerHeight);
+
 
 		}
+
+		//////////////// GODRAYS FUNCTIONS  //////////////////
+		function initPostprocessing(renderTargetWidth, renderTargetHeight) {
+
+			postprocessing.scene = new THREE.Scene();
+
+			postprocessing.camera = new THREE.OrthographicCamera(- 0.5, 0.5, 0.5, - 0.5, - 10000, 10000);
+			postprocessing.camera.position.z = 100;
+
+			postprocessing.scene.add(postprocessing.camera);
+
+			var pars = { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBFormat };
+			postprocessing.rtTextureColors = new THREE.WebGLRenderTarget(renderTargetWidth, renderTargetHeight, pars);
+
+			// Switching the depth formats to luminance from rgb doesn't seem to work. I didn't
+			// investigate further for now.
+			// pars.format = LuminanceFormat;
+
+			// I would have this quarter size and use it as one of the ping-pong render
+			// targets but the aliasing causes some temporal flickering
+
+			postprocessing.rtTextureDepth = new THREE.WebGLRenderTarget(renderTargetWidth, renderTargetHeight, pars);
+			postprocessing.rtTextureDepthMask = new THREE.WebGLRenderTarget(renderTargetWidth, renderTargetHeight, pars);
+
+			// The ping-pong render targets can use an adjusted resolution to minimize cost
+
+			var adjustedWidth = renderTargetWidth * godrayRenderTargetResolutionMultiplier;
+			var adjustedHeight = renderTargetHeight * godrayRenderTargetResolutionMultiplier;
+			postprocessing.rtTextureGodRays1 = new THREE.WebGLRenderTarget(adjustedWidth, adjustedHeight, pars);
+			postprocessing.rtTextureGodRays2 = new THREE.WebGLRenderTarget(adjustedWidth, adjustedHeight, pars);
+
+			// god-ray shaders
+
+			var godraysMaskShader = GodRaysDepthMaskShader;
+			postprocessing.godrayMaskUniforms = THREE.UniformsUtils.clone(godraysMaskShader.uniforms);
+			postprocessing.materialGodraysDepthMask = new THREE.ShaderMaterial({
+
+				uniforms: postprocessing.godrayMaskUniforms,
+				vertexShader: godraysMaskShader.vertexShader,
+				fragmentShader: godraysMaskShader.fragmentShader
+
+			});
+
+			var godraysGenShader = GodRaysGenerateShader;
+			postprocessing.godrayGenUniforms = THREE.UniformsUtils.clone(godraysGenShader.uniforms);
+			postprocessing.materialGodraysGenerate = new THREE.ShaderMaterial({
+
+				uniforms: postprocessing.godrayGenUniforms,
+				vertexShader: godraysGenShader.vertexShader,
+				fragmentShader: godraysGenShader.fragmentShader
+
+			});
+
+			var godraysCombineShader = GodRaysCombineShader;
+			postprocessing.godrayCombineUniforms = THREE.UniformsUtils.clone(godraysCombineShader.uniforms);
+			postprocessing.materialGodraysCombine = new THREE.ShaderMaterial({
+
+				uniforms: postprocessing.godrayCombineUniforms,
+				vertexShader: godraysCombineShader.vertexShader,
+				fragmentShader: godraysCombineShader.fragmentShader
+
+			});
+
+			var godraysFakeSunShader = GodRaysFakeSunShader;
+			postprocessing.godraysFakeSunUniforms = THREE.UniformsUtils.clone(godraysFakeSunShader.uniforms);
+			postprocessing.materialGodraysFakeSun = new THREE.ShaderMaterial({
+
+				uniforms: postprocessing.godraysFakeSunUniforms,
+				vertexShader: godraysFakeSunShader.vertexShader,
+				fragmentShader: godraysFakeSunShader.fragmentShader
+
+			});
+
+			postprocessing.godraysFakeSunUniforms.bgColor.value.setHex(bgColor);
+			postprocessing.godraysFakeSunUniforms.sunColor.value.setHex(sunColor);
+
+			postprocessing.godrayCombineUniforms.fGodRayIntensity.value = 0.75;
+
+			postprocessing.quad = new THREE.Mesh(
+				new THREE.PlaneBufferGeometry(1.0, 1.0),
+				postprocessing.materialGodraysGenerate
+			);
+			postprocessing.quad.position.z = - 9900;
+			postprocessing.scene.add(postprocessing.quad);
+
+		}
+
+		function getStepSize(filterLen, tapsPerPass, pass) {
+
+			return filterLen * Math.pow(tapsPerPass, - pass);
+
+		}
+
+		function filterGodRays(inputTex, renderTarget, stepSize) {
+
+			postprocessing.scene.overrideMaterial = postprocessing.materialGodraysGenerate;
+
+			postprocessing.godrayGenUniforms["fStepSize"].value = stepSize;
+			postprocessing.godrayGenUniforms["tInput"].value = inputTex;
+
+			renderer.setRenderTarget(renderTarget);
+			renderer.render(postprocessing.scene, postprocessing.camera);
+			postprocessing.scene.overrideMaterial = null;
+
+		}
+
+		function renderFX() {
+
+			var time = Date.now() / 4000;
+
+
+			if (postprocessing.enabled) {
+
+				// Find the screenspace position of the sun
+
+				screenSpacePosition.copy(sunPosition).project(camera);
+
+				screenSpacePosition.x = (screenSpacePosition.x + 1) / 2;
+				screenSpacePosition.y = (screenSpacePosition.y + 1) / 2;
+
+				// Give it to the god-ray and sun shaders
+
+				postprocessing.godrayGenUniforms["vSunPositionScreenSpace"].value.x = screenSpacePosition.x;
+				postprocessing.godrayGenUniforms["vSunPositionScreenSpace"].value.y = screenSpacePosition.y;
+
+				postprocessing.godraysFakeSunUniforms["vSunPositionScreenSpace"].value.x = screenSpacePosition.x;
+				postprocessing.godraysFakeSunUniforms["vSunPositionScreenSpace"].value.y = screenSpacePosition.y;
+
+				///*
+				// -- Draw sky and sun --
+
+				// Clear colors and depths, will clear to sky color
+
+				renderer.setRenderTarget(postprocessing.rtTextureColors);
+				renderer.clear(true, true, false);
+
+				// Sun render. Runs a shader that gives a brightness based on the screen
+				// space distance to the sun. Not very efficient, so i make a scissor
+				// rectangle around the suns position to avoid rendering surrounding pixels.
+
+				var sunsqH = 0.74 * window.innerHeight; // 0.74 depends on extent of sun from shader
+				var sunsqW = 0.74 * window.innerHeight; // both depend on height because sun is aspect-corrected
+
+				screenSpacePosition.x *= window.innerWidth;
+				screenSpacePosition.y *= window.innerHeight;
+
+				renderer.setScissor(screenSpacePosition.x - sunsqW / 2, screenSpacePosition.y - sunsqH / 2, sunsqW, sunsqH);
+				renderer.setScissorTest(true);
+
+				postprocessing.godraysFakeSunUniforms["fAspect"].value = window.innerWidth / window.innerHeight;
+
+				postprocessing.scene.overrideMaterial = postprocessing.materialGodraysFakeSun;
+				renderer.setRenderTarget(postprocessing.rtTextureColors);
+				renderer.render(postprocessing.scene, postprocessing.camera);
+
+				renderer.setScissorTest(false);
+				//*/
+				// -- Draw scene objects --
+
+				// Colors
+
+				scene.overrideMaterial = null;
+				renderer.setRenderTarget(postprocessing.rtTextureColors);
+				renderer.render(scene, camera);
+
+				///*	// Depth
+
+				scene.overrideMaterial = materialDepth;
+				renderer.setRenderTarget(postprocessing.rtTextureDepth);
+				renderer.clear();
+				renderer.render(scene, camera);
+				//*/
+				//
+
+				postprocessing.godrayMaskUniforms["tInput"].value = postprocessing.rtTextureDepth.texture;
+
+				postprocessing.scene.overrideMaterial = postprocessing.materialGodraysDepthMask;
+				renderer.setRenderTarget(postprocessing.rtTextureDepthMask);
+				renderer.render(postprocessing.scene, postprocessing.camera);
+
+				// -- Render god-rays --
+
+				// Maximum length of god-rays (in texture space [0,1]X[0,1])
+
+				var filterLen = 1.0;
+
+				// Samples taken by filter
+
+				var TAPS_PER_PASS = 6.0;
+
+				// Pass order could equivalently be 3,2,1 (instead of 1,2,3), which
+				// would start with a small filter support and grow to large. however
+				// the large-to-small order produces less objectionable aliasing artifacts that
+				// appear as a glimmer along the length of the beams
+
+				// pass 1 - render into first ping-pong target
+				filterGodRays(postprocessing.rtTextureDepthMask.texture, postprocessing.rtTextureGodRays2, getStepSize(filterLen, TAPS_PER_PASS, 1.0));
+
+				// pass 2 - render into second ping-pong target
+				filterGodRays(postprocessing.rtTextureGodRays2.texture, postprocessing.rtTextureGodRays1, getStepSize(filterLen, TAPS_PER_PASS, 2.0));
+
+				// pass 3 - 1st RT
+				filterGodRays(postprocessing.rtTextureGodRays1.texture, postprocessing.rtTextureGodRays2, getStepSize(filterLen, TAPS_PER_PASS, 3.0));
+
+				// final pass - composite god-rays onto colors
+
+				postprocessing.godrayCombineUniforms["tColors"].value = postprocessing.rtTextureColors.texture;
+				postprocessing.godrayCombineUniforms["tGodRays"].value = postprocessing.rtTextureGodRays2.texture;
+
+				postprocessing.scene.overrideMaterial = postprocessing.materialGodraysCombine;
+
+				renderer.setRenderTarget(null);
+				renderer.render(postprocessing.scene, postprocessing.camera);
+				postprocessing.scene.overrideMaterial = null;
+
+			} else {
+
+				renderer.setRenderTarget(null);
+				renderer.clear();
+				renderer.render(scene, camera);
+
+			}
+		}
+		/////////////////////////
+
 
 		function initComputeRenderer() {
 
@@ -479,9 +708,9 @@
 			positionUniforms["delta"] = { value: 0.0 };
 			velocityUniforms["time"] = { value: 1.0 };
 			velocityUniforms["delta"] = { value: 0.0 };
-			velocityUniforms["separationDistance"] = { value: 2.0 }; //{ value: 1.0 };
-			velocityUniforms["alignmentDistance"] = { value: 2.0 }; //{ value: 1.0 };
-			velocityUniforms["cohesionDistance"] = { value: 2.0 }; //{ value: 1.0 };
+			velocityUniforms["separationDistance"] = { value: 20 }; //{ value: 1.0 };
+			velocityUniforms["alignmentDistance"] = { value: 20 }; //{ value: 1.0 };
+			velocityUniforms["cohesionDistance"] = { value: 50 }; //{ value: 1.0 };
 			velocityUniforms["predator"] = { value: new THREE.Vector3() };
 			velocityUniforms["predatorCoeff"] = { value: 0.0 };
 			velocityVariable.material.defines.BOUNDS = BOUNDS.toFixed(2);
@@ -529,14 +758,12 @@
 		}
 
 
-
 		function onDocumentMouseMove(event) {
 
 			mouseX = event.clientX - windowHalfX;
 			mouseY = event.clientY - windowHalfY;
 
 		}
-
 
 		function onDocumentMouseLeftClick(event) {
 
@@ -588,12 +815,12 @@
 
 		}
 
-		function initBirds() {
+		function initFishes() {
 
-			var geometry = new BirdGeometry();
+			var geometry = new FishGeometry();
 
 			// For Vertex and Fragment
-			birdUniforms = {
+			fishUniforms = {
 				"color": { value: new THREE.Color(0xffffff) }, //{ value: new THREE.Color(Math.random() * 0xffffff) }
 				"texturePosition": { value: null },
 				"textureVelocity": { value: null },
@@ -603,19 +830,19 @@
 
 			// THREE.ShaderMaterial
 			var material = new THREE.ShaderMaterial({
-				uniforms: birdUniforms,
-				vertexShader: document.getElementById('birdVS').textContent,
-				fragmentShader: document.getElementById('birdFS').textContent,
+				uniforms: fishUniforms,
+				vertexShader: document.getElementById('fishVS').textContent,
+				fragmentShader: document.getElementById('fishFS').textContent,
 				side: THREE.DoubleSide
 
 			});
 
-			var birdMesh = new THREE.Mesh(geometry, material);
-			birdMesh.rotation.y = Math.PI / 2;
-			birdMesh.matrixAutoUpdate = false;
-			birdMesh.updateMatrix();
+			var fishMesh = new THREE.Mesh(geometry, material);
+			fishMesh.rotation.y = Math.PI / 2;
+			fishMesh.matrixAutoUpdate = false;
+			fishMesh.updateMatrix();
 
-			scene.add(birdMesh);
+			scene.add(fishMesh);
 
 		}
 
@@ -668,6 +895,23 @@
 
 		function render() {
 
+			updateFishes();
+			
+			//overwrite mouse value if it is not moved
+			mouseX = 10000;
+			mouseY = 10000;
+
+			gpuCompute.compute();
+
+			fishUniforms["texturePosition"].value = gpuCompute.getCurrentRenderTarget(positionVariable).texture;
+			fishUniforms["textureVelocity"].value = gpuCompute.getCurrentRenderTarget(velocityVariable).texture;
+
+			// renderer.render(scene, camera);
+			renderFX();
+		}
+
+		function updateFishes()
+		{
 			var now = performance.now();
 			var delta = (now - last) / 1000;
 
@@ -678,26 +922,10 @@
 			positionUniforms["delta"].value = delta;
 			velocityUniforms["time"].value = now;
 			velocityUniforms["delta"].value = delta;
-			birdUniforms["time"].value = now;
-			birdUniforms["delta"].value = delta;
+			fishUniforms["time"].value = now;
+			fishUniforms["delta"].value = delta;
 
 			velocityUniforms["predator"].value.set(0.5 * mouseX / windowHalfX, - 0.5 * mouseY / windowHalfY, 0);
-
-			mouseX = 10000;
-			mouseY = 10000;
-
-			gpuCompute.compute();
-
-			birdUniforms["texturePosition"].value = gpuCompute.getCurrentRenderTarget(positionVariable).texture;
-			birdUniforms["textureVelocity"].value = gpuCompute.getCurrentRenderTarget(velocityVariable).texture;
-
-			renderer.render(scene, camera);
-
-		}
-
-		updateFishes(deltaTime)
-		{
-
 		}
 
 
