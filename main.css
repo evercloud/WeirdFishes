@@ -1,6 +1,15 @@
 body {
-    margin: 0;
+	background-color: #fff;
+	color: #444;
+
+	margin: 0;
+
 }
+
+a {
+	color: #08f;
+}
+
 
 canvas {
     display: block;
