@@ -1,5 +1,5 @@
 :root {
-	font-size: 14px;
+	font-size: 11px;
 	--blue: #08f;
 	--white: #fff;
 	--black: #000;
@@ -9,7 +9,6 @@
 	--text-md: 1.5rem;
 	--text-lg: 1.875rem;
 	overflow: hidden;
-
 }
 
 body {
@@ -31,12 +30,17 @@ button {
 	font-size: var(--text-md);
 	text-align: center;
 	visibility: hidden;
-	
+	margin-top: 3rem
 }
 
 h1 {
 	color: var(--white);
 	font-size: var(--text-lg);
+	margin-bottom: 3rem
+
+}
+
+h2{
 	margin-bottom: 2rem
 
 }
@@ -44,6 +48,12 @@ h1 {
 p {
 	color: var(--darkgray);
 	font-size: var(--text-sm);
+	margin-bottom: 0.5rem;
+	margin-right: 2rem;
+}
+
+img {
+	margin: 1rem;
 }
 
 .overlay {
@@ -60,5 +70,15 @@ p {
 	color: var(--white);
 
 	transition: opacity 5s;
+}
+
+div{
+
+	display: flex;
+	flex-flow: column;
+	padding: 0 1rem;
+	
+	align-items: center;
+	justify-content: center;
 }
 
