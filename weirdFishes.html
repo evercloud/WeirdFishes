@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 	<title>QuarantineJam2020 - Evercloud</title>
 	<meta charset="utf-8">
@@ -9,13 +10,14 @@
 
 <body>
 	<div id="overlay" class="overlay">
-			<h1>Welcome to Weird Fishes.</h1>
-			<p>There is no goal in this game, just chill out and enjoy.</p>
-			<p>If you really have to, drag one or two fingers to interact with fishes.</p>
-			<p>Use left or right click of your mouse if you have no fingers.</p>
-			<img src="./img/headphones128_W.png">
-			<p>Please wear your headphones.</p>
-			<button id="startButton" disabled=true>Press or touch to start.</button>
+		<h1>Welcome to Weird Fishes.</h1>
+		<p>There is no goal in this game, just chill out and enjoy.</p>
+		<p>If you really have to, drag one or two fingers to interact with fishes.</p>
+		<p>Use left or right click of your mouse if you have no fingers.</p>
+		<img src="./img/headphones128_W.png">
+		<p>Please wear your headphones.</p>
+		<p>Design and coding: Claudio Scamporlino <br>Music: Emanuele Toscano</p>
+		<button id="startButton" disabled=true>Press or touch to start.</button>
 	</div>
 	<script type="module">
 
@@ -38,14 +40,29 @@
 			startButton.style.visibility = "visible";
 
 			startButton.disabled = false;
+
 		}, 7000);
 
 		startButton.addEventListener('click', function () {
 
 			let overlay = document.getElementById('overlay');
-			overlay.remove();
+			// overlay.remove();
+
+			overlay.style.opacity = 0;
+
+			music.play();
+			backgroundNoise.play();
+
+			setTimeout(function () {
+				
+				overlay.remove();
+
+			}, 6000);
+
 
 		}, false);
+
+
 
 		///////// GODRAYS VARIABLES /////////////////
 		import { GodRaysFakeSunShader, GodRaysDepthMaskShader, GodRaysCombineShader, GodRaysGenerateShader } from './examples/jsm/shaders/GodRaysShader.js';
@@ -225,7 +242,7 @@
 
 
 		var container;
-		var camera, scene, renderer, listener;
+		var camera, scene, renderer, audioLoader, listener;
 		var mouseX = 0, mouseY = 0;
 
 		var windowHalfX = window.innerWidth / 2;
@@ -242,15 +259,10 @@
 		var velocityUniforms;
 		var fishUniforms;
 
-		//TEST SOUND
-		// var sound = new THREE.Audio(listener);
-		// var audioLoader = new THREE.AudioLoader();
-		// audioLoader.load('./audio/test.mp3', function (buffer) {
-		// 	sound.setBuffer(buffer);
-		// 	sound.setLoop(true);
-		// 	sound.setVolume(0.5);
-		// 	sound.play();
-		// });
+
+		var music;
+		var backgroundNoise;
+
 
 		let cube;
 
@@ -269,13 +281,13 @@
 			scene = new THREE.Scene(); 2
 			scene.background = new THREE.Color(0x006080);;//GOOD: (0x006994);//darker 004060
 
-			// listener = new THREE.AudioListener();
-			// camera.add(listener);
 
 			renderer = new THREE.WebGLRenderer();
 			renderer.setPixelRatio(window.devicePixelRatio);
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			container.appendChild(renderer.domElement);
+
+			initAudio();
 
 			initComputeRenderer();
 
@@ -297,6 +309,35 @@
 			initPostprocessing(window.innerWidth, window.innerHeight);
 
 		}
+
+
+		function initAudio() {
+
+			// load a sound and set it as the Audio object's buffer
+			audioLoader = new THREE.AudioLoader();
+			listener = new THREE.AudioListener();
+			camera.add(listener);
+
+			music = new THREE.Audio(listener);
+
+			audioLoader.load('audio/musicLoop.mp3', function (buffer) {
+				music.setBuffer(buffer);
+				music.setLoop(true);
+				music.setVolume(1);
+				// music.play();
+			});
+
+			backgroundNoise = new THREE.Audio(listener);
+
+			audioLoader.load('audio/fishTank.mp3', function (buffer) {
+				backgroundNoise.setBuffer(buffer);
+				backgroundNoise.setLoop(true);
+				backgroundNoise.setVolume(0.2);
+				// music.play();
+			});
+		}
+
+
 
 		//////////////// GODRAYS FUNCTIONS  //////////////////
 		function initPostprocessing(renderTargetWidth, renderTargetHeight) {
