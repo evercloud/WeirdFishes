@@ -260,6 +260,7 @@ void main() {
     //my working solution
     //gl_FragColor = vec4(color.x, color.y,color.z, 1);
     //CRAZY RANDOM COLORS alternative
-    gl_FragColor = vec4(vColor.x, color.y, color.z, 1);
+    //gl_FragColor = vec4(vColor.x, color.y, color.z, 1);
+    gl_FragColor = vec4(vColor.x, vColor.y, vColor.z, 1);
 }
 `;

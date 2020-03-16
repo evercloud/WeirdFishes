@@ -35,12 +35,12 @@
 
 
 		/* TEXTURE WIDTH FOR SIMULATION */
-		var WIDTH = 64;// 32;
+		var WIDTH = 32;// 32;
 
 		var FISHES = WIDTH * WIDTH;
 
 		// Custom Geometry - using 3 triangles each. No UVs, no normals currently.
-		var FishGeometry = function () {
+		var FishGeometry = function (thisColor) {
 
 			var triangles = FISHES * 3;
 			var points = triangles * 3;
@@ -99,14 +99,68 @@
 
 			for (var v = 0; v < triangles * 3; v++) {
 
-				var i = ~ ~(v / 3);
+				var i = ~ ~(v / 3); //divde and floor vertexes in groups of 3 -> head, body, tail
+
 				var x = (i % WIDTH) / WIDTH;
 				var y = ~ ~(i / WIDTH) / WIDTH;
 
+				//COLOR0 - ok only with shader mod
+				// var c = new THREE.Color(
+				// 	0x444444 +
+				// 	~ ~(v / 9) / FISHES * 0x666666
+				// );
+
+				// // COLOR1 - white blue-ish
+				// var c = new THREE.Color(
+				// 	0xffffff +
+				// 	~ ~(v / 9) / 256 * 0xffffff
+				// );
+
+				// // COLOR2 - fucsia purple
+				// var c = new THREE.Color(
+				// 	0x010101 +
+				// 	~ ~(v / 9) / 16 * 0xffffff
+				// );
+
+				// //GREENBLUE WEIRD
+				// // // COLOR2 - fucsia purple
+				// var c = new THREE.Color(
+				// 	0x010101 +
+				// 	~ ~(v / 9) / 4096 * 0x1f1f1f
+				// );
+
+				// //WHITE YELLOW WEIRD
+				// var c = new THREE.Color(
+				// 	~ ~(v / 9) % FISHES * 0xffffff
+				// );
+
+				// //MOLTO BELLO
+				// var c = new THREE.Color(
+				// 	~ ~(v / 3) / FISHES * 0xffffff
+				// );
+
+				//MOLTO BELLO 2 
 				var c = new THREE.Color(
-					0x444444 +
-					~ ~(v / 9) / FISHES * 0x666666
+					~ ~(v) * 128 * 0xffffff
 				);
+
+				// //MOLTO BELLO 2 
+				// var c = new THREE.Color(
+				// 	thisColor +
+				// 	~ ~(v / 9) / 4096 * thisColor
+				// );
+
+				// //THIS KIND OF WORKS
+				// var c = new THREE.Color(
+				// 	0xffffff * myRandom(~ ~(v % 3))
+				// );
+
+				// var c = new THREE.Color(Math.random() * 0xffffff);
+				// var c = new THREE.Color(thisColor);//(0xff0000);
+
+				//Random.Range() is achieved with Math.random() * (max - min) + min;
+				// var c = new THREE.Color(((Math.random() * 0.01) + 0.99) * 0xff0000);
+
 
 				fishColors.array[v * 3 + 0] = c.r;
 				fishColors.array[v * 3 + 1] = c.g;
@@ -122,6 +176,11 @@
 			this.scale(0.2, 0.2, 0.2);
 
 		};
+
+		// function myRandom(seed) {
+		// 	var x = Math.sin(seed++) * 10000;
+		// 	return x - Math.floor(x);
+		// }
 
 		FishGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
 
@@ -492,7 +551,7 @@
 
 		function initFishes() {
 
-			var geometry = new FishGeometry();
+			var geometry = new FishGeometry(new THREE.Color(Math.random() * 0xffffff));//0x41c30e));
 
 			// For Vertex and Fragment
 			fishUniforms = {
