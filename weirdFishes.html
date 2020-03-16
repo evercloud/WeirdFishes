@@ -459,12 +459,13 @@
 
 		function initControls() {
 			document.addEventListener('mousemove', onDocumentMouseMove, false);
-			// document.addEventListener('touchstart', onDocumentTouchStart, false);
-			// document.addEventListener('touchmove', onDocumentTouchMove, false);
+			document.addEventListener('touchstart', onDocumentTouchStart, false);
+			document.addEventListener('touchmove', onDocumentTouchMove, false);
 
-			document.addEventListener("contextmenu", function (e) {
-				e.preventDefault();
-			}, false);
+			document.addEventListener("contextmenu", preventBehavior, false);
+
+			document.addEventListener("touchmove", preventBehavior, { passive: false });
+
 
 			// Listen for mouseup
 			document.addEventListener("mousedown", function (e) {
@@ -483,8 +484,18 @@
 				velocityUniforms["predatorCoeff"] = { value: 0.0 };
 
 			}, false);
+
+			document.addEventListener("touchend", function (e) {
+
+				velocityUniforms["predatorCoeff"] = { value: 0.0 };
+
+			}, false);
+
 		}
 
+		function preventBehavior(e) {
+			e.preventDefault();
+		};
 
 		function onDocumentMouseMove(event) {
 
@@ -505,31 +516,53 @@
 
 		}
 
-		// function onDocumentTouchStart(event) {
+		function onDocumentTouchStart(event) {
 
-		// 	if (event.touches.length === 1) {
+			if (event.touches.length === 1) {
 
-		// 		event.preventDefault();
+				event.preventDefault();
 
-		// 		mouseX = event.touches[0].pageX - windowHalfX;
-		// 		mouseY = event.touches[0].pageY - windowHalfY;
+				mouseX = event.touches[0].pageX - windowHalfX;
+				mouseY = event.touches[0].pageY - windowHalfY;
 
-		// 	}
+				velocityUniforms["predatorCoeff"] = { value: -1.0 };
 
-		// }
+			} else if (event.touches.length > 1) {
 
-		// function onDocumentTouchMove(event) {
+				event.preventDefault();
 
-		// 	if (event.touches.length === 1) {
+				mouseX = ((event.touches[0].pageX + event.touches[1].pageX) / 2) - windowHalfX;
+				mouseY = ((event.touches[0].pageY + event.touches[1].pageY) / 2) - windowHalfY;
 
-		// 		event.preventDefault();
+				velocityUniforms["predatorCoeff"] = { value: 1.0 };
 
-		// 		mouseX = event.touches[0].pageX - windowHalfX;
-		// 		mouseY = event.touches[0].pageY - windowHalfY;
+			}
 
-		// 	}
+		}
 
-		// }
+		function onDocumentTouchMove(event) {
+
+			if (event.touches.length === 1) {
+
+				event.preventDefault();
+
+				mouseX = event.touches[0].pageX - windowHalfX;
+				mouseY = event.touches[0].pageY - windowHalfY;
+
+				velocityUniforms["predatorCoeff"] = { value: -1.0 };
+
+			} else if (event.touches.length > 1) {
+
+				event.preventDefault();
+
+				mouseX = ((event.touches[0].pageX + event.touches[1].pageX) / 2) - windowHalfX;
+				mouseY = ((event.touches[0].pageY + event.touches[1].pageY) / 2) - windowHalfY;
+
+				velocityUniforms["predatorCoeff"] = { value: 1.0 };
+
+			}
+
+		}
 
 		function onWindowResize() {
 
