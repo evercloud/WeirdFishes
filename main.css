@@ -10,6 +10,9 @@ a {
 	color: #08f;
 }
 
+body {
+	font-family:Tahoma, "Geneva", sans-serif	
+  }
 
 canvas {
     display: block;
@@ -36,6 +39,16 @@ canvas {
 	background: transparent;
 	color: #ffffff;
 	outline: 2px solid #ffffff;
+
+	font-size: 24px;
+	text-align: center;
+	visibility: hidden;
+}
+
+
+#overlay > div > h1 {
+	color: #ffffff;
+		font-size: 30px;
 }
 
 #overlay > div > p {
