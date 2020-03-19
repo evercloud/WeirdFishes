@@ -29,7 +29,7 @@ button {
 	outline: 2px solid var(--white);
 	font-size: var(--text-md);
 	text-align: center;
-	visibility: hidden;
+	/* visibility: hidden; */
 	margin-top: 3rem
 }
 

@@ -13,7 +13,8 @@
 		<div>
 			<h1>Welcome to Weird Fishes.</h1>
 			<p>There is no goal in this game, just chill out and enjoy.</p>
-			<p>If you really have to, <b>drag one or two fingers</b> to interact with fishes or use <b>left or right click</b> of your mouse.</p>
+			<p>If you really have to, <b>drag one or two fingers</b> to interact with fishes or use <b>left or right
+					click</b> of your mouse.</p>
 		</div>
 		<img src="./img/headphones128_W.png">
 		<div>
@@ -21,11 +22,14 @@
 			<p>Design and coding: Claudio Scamporlino </p>
 			<p>Music: Emanuele Toscano</p>
 		</div>
-		<button id="startButton" disabled=true>Press or touch to start</button>
+		<!-- <button id="startButton" disabled=true>Press or touch to start</button> -->
+		<button id="startButton" disabled=true>LOADING</button>
 	</div>
+	<!-- <script src="./three.js"></script> -->
+
 	<script type="module">
 
-		import * as THREE from '../build/three.module.js';
+		import * as THREE from './build/three.module.js';
 
 		import { GPUComputationRenderer } from './examples/jsm/misc/GPUComputationRenderer.js';
 
@@ -34,18 +38,20 @@
 		import { fragmentShaderPosition, fragmentShaderVelocity, fishVS, fishFS } from './resources/shader.glsl.js';
 
 
-
-
 		//INTRO MENU UI ////////
 		const startButton = document.getElementById('startButton');
+		let musicReady = false;
+		let soundReady = false;
 
-		//wait 7 seconds before enabling overlay removal
-		setTimeout(function () {
-			startButton.style.visibility = "visible";
-
-			startButton.disabled = false;
-
-		}, 7000);
+		// // wait 5 seconds before enabling overlay removal
+		setTimeout(function tryLaunchingGame() {
+			if (musicReady && soundReady) {
+				startButton.textContent = "Press or touch to start";
+				startButton.disabled = false;
+			} else {
+				setTimeout(tryLaunchingGame, 1000);
+			}
+		}, 5000);
 
 		startButton.addEventListener('click', function () {
 
@@ -62,7 +68,6 @@
 				overlay.remove();
 
 			}, 6000);
-
 
 		}, false);
 
@@ -153,74 +158,23 @@
 				var y = ~ ~(i / WIDTH) / WIDTH;
 
 				//COLOR0 - ok only with shader mod
-				// var c = new THREE.Color(
-				// 	0x444444 +
-				// 	~ ~(v / 9) / FISHES * 0x666666
-				// );
+				// var c = new THREE.Color(0x444444 + ~ ~(v / 9) / FISHES * 0x666666);
 
-				// // COLOR1 - white blue-ish
-				// var c = new THREE.Color(
-				// 	0xffffff +
-				// 	~ ~(v / 9) / 256 * 0xffffff
-				// );
-
-				// // COLOR1 - white blue-ish
-				var c = new THREE.Color(
-					0xbbbbbb +
-					~ ~(v / 9) / 256 * 0xffffff
-				);
+				//this // // COLOR1 - white blue-ish
+				var c = new THREE.Color(0xbbbbbb + ~ ~(v / 9) / 256 * 0xffffff);
 
 				// // COLOR1 - white yellowish
-				// var c = new THREE.Color(
-				// 	0xffffff +
-				// 	~ ~(v / 9) / 8 * 0xffffff
+				// var c = new THREE.Color(0xffffff + ~ ~(v / 9) / 8 * 0xffffff);
+
+				// // COLOR2 - fucsia purple, GREENBLUE WEIRD
+				// var c = new THREE.Color(0x010101 +
+				// 	~ ~(v / 9) / 16 * 0xffffff // 	~ ~(v / 9) / 4096 * 0x1f1f1f
 				// );
 
-				// // COLOR2 - fucsia purple
+				// //WHITE YELLOW WEIRD, MOLTO BELLO, 2 ,3
 				// var c = new THREE.Color(
-				// 	0x010101 +
-				// 	~ ~(v / 9) / 16 * 0xffffff
+				// 	~ ~(v / 9) % FISHES * 0xffffff // 	~ ~(v / 3) / FISHES * 0xffffff  // 	~ ~(v) * 128 * 0xffffff // 	~ ~(v / 9) / 4096 * thisColor
 				// );
-
-				// //GREENBLUE WEIRD
-				// // // COLOR2 - fucsia purple
-				// var c = new THREE.Color(
-				// 	0x010101 +
-				// 	~ ~(v / 9) / 4096 * 0x1f1f1f
-				// );
-
-				// //WHITE YELLOW WEIRD
-				// var c = new THREE.Color(
-				// 	~ ~(v / 9) % FISHES * 0xffffff
-				// );
-
-				// //MOLTO BELLO
-				// var c = new THREE.Color(
-				// 	~ ~(v / 3) / FISHES * 0xffffff
-				// );
-
-				// //MOLTO BELLO 2 
-				// var c = new THREE.Color(
-				// 	~ ~(v) * 128 * 0xffffff
-				// );
-
-				// //MOLTO BELLO 2 
-				// var c = new THREE.Color(
-				// 	thisColor +
-				// 	~ ~(v / 9) / 4096 * thisColor
-				// );
-
-				// //THIS KIND OF WORKS, BUT IT'S UGLY
-				// var c = new THREE.Color(
-				// 	0xffffff * myRandom(~ ~(v % 3))
-				// );
-
-				// var c = new THREE.Color(Math.random() * 0xffffff);
-				// var c = new THREE.Color(thisColor);//(0xff0000);
-
-				//Random.Range() is achieved with Math.random() * (max - min) + min;
-				// var c = new THREE.Color(((Math.random() * 0.01) + 0.99) * 0xff0000);
-
 
 				fishColors.array[v * 3 + 0] = c.r;
 				fishColors.array[v * 3 + 1] = c.g;
@@ -236,11 +190,6 @@
 			this.scale(0.2, 0.2, 0.2);
 
 		};
-
-		// function myRandom(seed) {
-		// 	var x = Math.sin(seed++) * 10000;
-		// 	return x - Math.floor(x);
-		// }
 
 		FishGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
 
@@ -328,6 +277,7 @@
 				music.setBuffer(buffer);
 				music.setLoop(true);
 				music.setVolume(1);
+				musicReady = true;
 				// music.play();
 			});
 
@@ -337,6 +287,7 @@
 				backgroundNoise.setBuffer(buffer);
 				backgroundNoise.setLoop(true);
 				backgroundNoise.setVolume(0.3);
+				soundReady = true;
 				// music.play();
 			});
 		}
