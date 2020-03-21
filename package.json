@@ -1,0 +1,27 @@
+{
+  "name": "wierdfishes",
+  "version": "1.0.0",
+  "description": "Quarantine Jam Entry",
+  "main": "weirdFishes.html",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/evercloud/QuarantineJam2020.git"
+  },
+  "author": "Claudio Scamporlino",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/evercloud/QuarantineJam2020/issues"
+  },
+  "homepage": "https://github.com/evercloud/QuarantineJam2020#readme",
+  "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.1.0",
+    "eslint-plugin-import": "^2.20.1"
+  }
+}
