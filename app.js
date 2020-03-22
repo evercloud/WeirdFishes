@@ -10,11 +10,13 @@ import {
   fragmentShaderPosition, fragmentShaderVelocity, fishVS, fishFS,
 } from './resources/shader.glsl.js';
 
-
-// /////// GODRAYS VARIABLES /////////////////
 import {
   GodRaysDepthMaskShader, GodRaysCombineShader, GodRaysGenerateShader,
 } from './examples/jsm/shaders/GodRaysShader.js';
+
+import {
+  StereoEffect
+} from './examples/jsm/effects/StereoEffect.js';
 
 
 // INTRO MENU UI ////////
@@ -30,11 +32,13 @@ setTimeout(function tryLaunchingGame() {
   } else {
     setTimeout(tryLaunchingGame, 1000);
   }
-}, 5000);
+}, 1000);//5000);
 
 startButton.addEventListener('click', () => {
   const overlay = document.getElementById('overlay');
-  // overlay.remove();
+
+  // prevent new clicks
+  startButton.disabled = true;
 
   overlay.style.opacity = 0;
 
@@ -46,15 +50,17 @@ startButton.addEventListener('click', () => {
   }, 6000);
 }, false);
 const postprocessing = { enabled: true };
-const sunPosition = new THREE.Vector3(0, 1000, -1000);
+const sunPosition = new THREE.Vector3(0, 200, -1000);
+// const sunPosition = new THREE.Vector3(0, 1000, -1000);
+
 // Use a smaller size for some of the god-ray render targets for better performance.
-const godrayRenderTargetResolutionMultiplier = 1.0 / 12.0;
+const godrayRenderTargetResolutionMultiplier = 1.0 / 4.0;//12.0;
 const screenSpacePosition = new THREE.Vector3();
 // ////////////////////////
 
 
 /* TEXTURE WIDTH FOR SIMULATION */
-const WIDTH = 64;// 32;
+const WIDTH = 32;// 64;
 
 const FISHES = WIDTH * WIDTH;
 
@@ -76,7 +82,6 @@ const FishGeometry = function () {
   this.setAttribute('fishVertex', fishVertex);
 
   // this.setAttribute( 'normal', new Float32Array( points * 3 ), 3 );
-
 
   let v = 0;
 
@@ -152,10 +157,14 @@ FishGeometry.prototype = Object.create(THREE.BufferGeometry.prototype);
 
 
 let container;
-let camera; let scene; let renderer; let audioLoader; let
-  listener;
-let mouseX = 0; let
-  mouseY = 0;
+let camera;
+let scene;
+let renderer;
+let audioLoader;
+let listener;
+let stereoEffect;
+let mouseX = 0;
+let mouseY = 0;
 
 let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
@@ -190,14 +199,18 @@ function init() {
   camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
   camera.position.z = 350;// 350;
 
-  scene = new THREE.Scene(); 2;
-  scene.background = new THREE.Color(0x006080);// GOOD: (0x006994);//darker 004060
+  scene = new THREE.Scene();
+  // scene.background = new THREE.Color(0x006080);// GOOD: (0x006994);//darker 004060
+  scene.background = new THREE.Color(0x003554);// GOOD: (0x006994);//darker 004060
 
 
   renderer = new THREE.WebGLRenderer();
   renderer.setPixelRatio(window.devicePixelRatio);
   renderer.setSize(window.innerWidth, window.innerHeight);
   container.appendChild(renderer.domElement);
+
+  stereoEffect = new StereoEffect(renderer);
+  stereoEffect.setSize(window.innerWidth, window.innerHeight);
 
   initAudio();
 
@@ -264,6 +277,7 @@ function initPostprocessing(renderTargetWidth, renderTargetHeight) {
 
   postprocessing.rtTextureDepth = new THREE.WebGLRenderTarget(renderTargetWidth, renderTargetHeight, pars);
   postprocessing.rtTextureDepthMask = new THREE.WebGLRenderTarget(renderTargetWidth, renderTargetHeight, pars);
+  postprocessing.rtTextureDepthMask2 = new THREE.WebGLRenderTarget(renderTargetWidth, renderTargetHeight, pars);
 
   // The ping-pong render targets can use an adjusted resolution to minimize cost
 
@@ -305,7 +319,7 @@ function initPostprocessing(renderTargetWidth, renderTargetHeight) {
   });
 
 
-  postprocessing.godrayCombineUniforms.fGodRayIntensity.value = 0.75;
+  postprocessing.godrayCombineUniforms.fGodRayIntensity.value = 0.4;//0.75;
 
   postprocessing.quad = new THREE.Mesh(
     new THREE.PlaneBufferGeometry(1.0, 1.0),
@@ -336,59 +350,71 @@ function renderFX() {
 
   if (postprocessing.enabled) {
     // Find the screenspace position of the sun
-
     screenSpacePosition.copy(sunPosition).project(camera);
-
     screenSpacePosition.x = (screenSpacePosition.x + 1) / 2;
     screenSpacePosition.y = (screenSpacePosition.y + 1) / 2;
 
     // Give it to the god-ray and sun shaders
-
     postprocessing.godrayGenUniforms.vSunPositionScreenSpace.value.x = screenSpacePosition.x;
     postprocessing.godrayGenUniforms.vSunPositionScreenSpace.value.y = screenSpacePosition.y;
 
-
     // -- Draw scene objects --
-
     // Colors
-
     scene.overrideMaterial = null;
+
+    // We want to render on a buffer
     renderer.setRenderTarget(postprocessing.rtTextureColors);
+
+    // rendering the scene is necessary or we will see just shadows
     renderer.render(scene, camera);
 
+    // stereoEffect.render(scene, camera);
 
+    // then we start calculating shadows. Save depths
     postprocessing.godrayMaskUniforms.tInput.value = postprocessing.rtTextureDepth.texture;
-
     postprocessing.scene.overrideMaterial = postprocessing.materialGodraysDepthMask;
-    renderer.setRenderTarget(postprocessing.rtTextureDepthMask);
-    renderer.render(postprocessing.scene, postprocessing.camera);
+
+    // I WAS NOT ABLE TO MERGE rtTextureDepthMask AND rtTextureDepthMask2 textures, so I give up.
+    // // make sure we are rendering on another buffer
+    // renderer.setRenderTarget(postprocessing.rtTextureDepthMask);
+
+    // // render generic light depth (we can do this later)
+    // renderer.render(postprocessing.scene, postprocessing.camera);
+
+    renderer.setRenderTarget(postprocessing.rtTextureDepthMask2);
+
+    // XC: render scene with fishes and save depth mask
+    renderer.render(scene, camera);
+    // stereoEffect.render(scene, camera);
 
     // -- Render god-rays --
 
     // Maximum length of god-rays (in texture space [0,1]X[0,1])
 
-    const filterLen = 1.0;
+    const filterLen = 0.6;// 1.0;
 
     // Samples taken by filter
 
-    const TAPS_PER_PASS = 5;// 6.0;
+    const TAPS_PER_PASS = 6;// 6.0;
 
     // Pass order could equivalently be 3,2,1 (instead of 1,2,3), which
     // would start with a small filter support and grow to large. however
     // the large-to-small order produces less objectionable aliasing artifacts that
     // appear as a glimmer along the length of the beams
 
-    // pass 1 - render into first ping-pong target
-    filterGodRays(postprocessing.rtTextureDepthMask.texture, postprocessing.rtTextureGodRays2,
+    // pass 1 - render into first ping-pong target //DISABLED rtTextureDepthMask
+    // filterGodRays(postprocessing.rtTextureDepthMask.texture, postprocessing.rtTextureGodRays2,
+    //   getStepSize(filterLen, TAPS_PER_PASS, 1.0));
+    filterGodRays(postprocessing.rtTextureDepthMask2.texture, postprocessing.rtTextureGodRays2,
       getStepSize(filterLen, TAPS_PER_PASS, 1.0));
 
-    // pass 2 - render into second ping-pong target
+    // // pass 2 - render into second ping-pong target
     filterGodRays(postprocessing.rtTextureGodRays2.texture, postprocessing.rtTextureGodRays1,
       getStepSize(filterLen, TAPS_PER_PASS, 2.0));
 
-    // pass 3 - 1st RT
+    // // pass 3 - 1st RT
     filterGodRays(postprocessing.rtTextureGodRays1.texture, postprocessing.rtTextureGodRays2,
-      getStepSize(filterLen, TAPS_PER_PASS, 3.0));
+      getStepSize(filterLen, TAPS_PER_PASS, 3.0));// 3.0));
 
     // final pass - composite god-rays onto colors
 
@@ -398,7 +424,9 @@ function renderFX() {
     postprocessing.scene.overrideMaterial = postprocessing.materialGodraysCombine;
 
     renderer.setRenderTarget(null);
+
     renderer.render(postprocessing.scene, postprocessing.camera);
+
     postprocessing.scene.overrideMaterial = null;
   } else {
     renderer.setRenderTarget(null);
@@ -570,11 +598,12 @@ function onWindowResize() {
   camera.updateProjectionMatrix();
 
   renderer.setSize(window.innerWidth, window.innerHeight);
+  stereoEffect.setSize(window.innerWidth, window.innerHeight);
 }
 
-function createTestFloor() {
-  cube = addTestCubeToScene(500, 1, 500, 0, -150, 0, new THREE.MeshLambertMaterial({ color: 0x00ccff }), scene);
-}
+// function createTestFloor() {
+//   cube = addTestCubeToScene(500, 1, 500, 0, -150, 0, new THREE.MeshLambertMaterial({ color: 0x00ccff }), scene);
+// }
 
 function initFishes() {
   const geometry = new FishGeometry(new THREE.Color(Math.random() * 0xffffff));// 0x41c30e));
@@ -606,13 +635,20 @@ function initFishes() {
 }
 
 
+function render() {
+  updateScene();
+
+  // renderer.render(scene, camera);
+  renderFX();
+}
+
 function animate() {
   requestAnimationFrame(animate);
 
   render();
 }
 
-function render() {
+function updateScene() {
   updateFishes();
 
   // overwrite mouse value to disable free fishes if user did not perform further action
@@ -622,9 +658,6 @@ function render() {
   gpuCompute.compute();
 
   updateFishesUniforms();
-
-  // renderer.render(scene, camera);
-  renderFX();
 }
 
 // UPDATE FUNCTIONS
@@ -643,7 +676,7 @@ function updateFishes() {
   fishUniforms.time.value = now;
   fishUniforms.delta.value = delta;
 
-  velocityUniforms.predator.value.set(0.5 * mouseX / windowHalfX, -0.5 * mouseY / windowHalfY, 0);
+  velocityUniforms.predator.value.set((0.5 * mouseX) / windowHalfX, (-0.5 * mouseY) / windowHalfY, 0);
 }
 
 function updateFishesUniforms() {
