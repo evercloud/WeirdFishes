@@ -5,13 +5,15 @@
 
 ![Weird Fishes screenshot](docs/TxdNbW.png)
 
-A relaxing WebGL aquarium made for **Quarantine Jam 2020**. Thousands of little fish swim around in GPU-driven schools — lure them, scare them, or just watch.
+A relaxing WebGL aquarium made for **Quarantine Jam 2020**. Thousands of little fish swim around in GPU-driven schools: lure them, scare them, or just watch.
+
+**Play online:** [evercloud.itch.io/weird-fishes](https://evercloud.itch.io/weird-fishes)
 
 ## Controls
 
-| Input | Action |
-| --- | --- |
-| Drag one finger / left click | Lure fishes |
+| Input                          | Action        |
+| ------------------------------ | ------------- |
+| Drag one finger / left click   | Lure fishes   |
 | Drag two fingers / right click | Frighten them |
 
 ## Run locally

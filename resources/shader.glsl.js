@@ -264,3 +264,25 @@ void main() {
     gl_FragColor = vec4(vColor.x, vColor.y, vColor.z, 1);
 }
 `;
+
+export const godRaysFakeSunFS = `
+varying vec2 vUv;
+
+uniform vec2 vSunPositionScreenSpace;
+uniform float fAspect;
+uniform vec3 sunColor;
+uniform vec3 bgColor;
+uniform float fSunRadius;
+uniform float fSunStrength;
+
+void main() {
+    vec2 diff = vUv - vSunPositionScreenSpace;
+    diff.x *= fAspect;
+
+    float prop = clamp(length(diff) / fSunRadius, 0.0, 1.0);
+    prop = fSunStrength * pow(1.0 - prop, 3.0);
+
+    gl_FragColor.xyz = mix(sunColor, bgColor, 1.0 - prop);
+    gl_FragColor.w = 1.0;
+}
+`;
